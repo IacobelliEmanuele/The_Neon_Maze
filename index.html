@@ -1,0 +1,2570 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Neon Maze</title>
+		<style>
+			body { margin: 0; }
+			canvas { display: block; }
+		</style>
+	</head>
+	<body>	
+		<script type="module">
+			'use strict';
+
+			import * as THREE from './js/three.module.js';
+
+			function main() {
+
+				//I create all the scenes.
+				const scene = new THREE.Scene();
+				const overlayScene = new THREE.Scene();
+				const menuScene = new THREE.Scene();
+
+				//I create the WebGL renderer and I set to false the "autoClear" to 
+				//manage multiple scenes.  
+				const renderer = new THREE.WebGLRenderer( {antialias: true} );
+				renderer.setSize( window.innerWidth, window.innerHeight);
+				renderer.autoClear = false;
+
+				//I create the section for the renderer in the HTML file.
+				document.body.appendChild( renderer.domElement );
+
+				//I create the Ambient light and I add it to the main "scene".
+				const aColor = 0xFFFFFF;
+				const aIntensity = 0.7;
+				const aLight = new THREE.AmbientLight(aColor, aIntensity);
+				scene.add(aLight);
+
+				//I create the light to illuminate the overlayScene and I add 
+				//it to the respective scene.
+				const overlayLight = new THREE.DirectionalLight(0xffffff, 1);
+				overlayLight.position.set(0, 0, 100);
+				overlayScene.add(overlayLight);
+
+				//I create the light to illuminate the menuScene and I add
+				//it to the respective scene.
+				const menuLight = new THREE.DirectionalLight(0xffffff, 1);
+				menuLight.position.set(0, 0, 100);
+				menuScene.add(menuLight);
+						
+				//The hierarchical model which represents the player. 
+				const player = new THREE.Object3D();
+				
+				const lumbarRegion = new THREE.Object3D();
+
+				const zoomOut = 0.01;
+
+				const torsoWidth = 2;
+				const torsoHeight = 4;
+				const torsoDepth = 2;
+				
+				const neckWidth = torsoWidth/1.5;
+				const neckHeight = torsoHeight/15;
+				const neckDepth = torsoDepth/1.5;
+				
+				const headWidth = neckWidth;
+				const headHeight = torsoHeight/3;
+				const headDepth = neckDepth;
+				
+				const shoulderWidth = torsoWidth/3;
+				const shoulderHeight = torsoHeight/15;
+				const shoulderDepth = torsoDepth/2;
+				
+				const upperArmWidth = shoulderWidth;
+				const upperArmHeight = torsoHeight/2;
+				const upperArmDepth = shoulderDepth;
+
+				const lowerArmWidth = shoulderWidth - zoomOut;
+				const lowerArmHeight = torsoHeight/2;
+				const lowerArmDepth = shoulderDepth - zoomOut;
+
+				const elbowWidth = torsoWidth/3 - zoomOut;
+				const elbowHeight = torsoHeight/15;
+				const elbowDepth = torsoDepth/2 - zoomOut;
+				
+				const hipWidth = torsoWidth/3;
+				const hipHeight = shoulderHeight;
+				const hipDepth = torsoDepth/2
+				
+				const upperLegWidth = torsoWidth/3;
+				const upperLegHeight = torsoHeight/2;
+				const upperLegDepth = torsoDepth/2;
+
+				const lowerLegWidth = torsoWidth/3 - zoomOut;
+				const lowerLegHeight = torsoHeight/2;
+				const lowerLegDepth = torsoDepth/2 - zoomOut;
+				
+				const kneeWidth = torsoWidth/3 - zoomOut;
+				const kneeHeight = torsoHeight/15;
+				const kneeDepth = torsoDepth/2 - zoomOut;
+				
+				const footHeight = lowerLegHeight/4;
+				const footWidth = lowerLegWidth;
+				const footDepth = lowerLegDepth*2;
+
+				const lumbarRegionHeight = footHeight + kneeHeight + hipHeight + lowerLegHeight*2;
+
+				lumbarRegion.position.y =  lumbarRegionHeight;
+
+				let torsoLoader = new THREE.TextureLoader();
+				const torsoMaterial = new THREE.MeshBasicMaterial({
+												map: torsoLoader.load('img/player/Schiena.png'),
+											});
+
+				const torso = new THREE.Mesh( new THREE.BoxGeometry(torsoWidth,torsoHeight,torsoDepth), torsoMaterial );
+				torso.position.y = torsoHeight/2;
+
+				let leftHipLoader = new THREE.TextureLoader();	
+				const leftHipMaterial = new THREE.MeshBasicMaterial({
+												map: leftHipLoader.load('img/player/HipSx.png'),
+											});
+
+				const leftHip = new THREE.Mesh( new THREE.BoxGeometry(hipWidth,hipHeight,hipDepth), leftHipMaterial );
+				leftHip.position.x = - torsoWidth/2 + upperLegWidth/2 + 0.1;
+				leftHip.position.y = - hipHeight/2;
+
+				let rightHipLoader = new THREE.TextureLoader();	
+				const rightHipMaterial = new THREE.MeshBasicMaterial({
+												map: rightHipLoader.load('img/player/HipDx.png'),
+											});
+
+				const rightHip = new THREE.Mesh( new THREE.BoxGeometry(hipWidth,hipHeight,hipDepth), rightHipMaterial );
+				rightHip.position.x = torsoWidth/2 - upperLegWidth/2 -0.1;
+				rightHip.position.y = - hipHeight/2;
+
+				let leftUpperLegLoader = new THREE.TextureLoader();	
+				const leftUpperLegMaterial = new THREE.MeshBasicMaterial({
+												map: leftUpperLegLoader.load('img/player/CosciaSx.png'),
+											});
+
+				const leftUpperLeg = new THREE.Mesh( new THREE.BoxGeometry(upperLegWidth,upperLegHeight,upperLegDepth), leftUpperLegMaterial );
+				leftUpperLeg.position.y = - (hipHeight/2 + upperLegHeight/2);
+
+				let rightUpperLegLoader = new THREE.TextureLoader();	
+				const rightUpperLegMaterial = new THREE.MeshBasicMaterial({
+												map: rightUpperLegLoader.load('img/player/CosciaDx.png'),
+											});
+
+				const rightUpperLeg = new THREE.Mesh( new THREE.BoxGeometry(upperLegWidth,upperLegHeight,upperLegDepth), rightUpperLegMaterial );
+				rightUpperLeg.position.y = - (hipHeight/2 + upperLegHeight/2);
+				
+				let leftKneeLoader = new THREE.TextureLoader();	
+				const leftKneeMaterial = new THREE.MeshBasicMaterial({
+												map: leftKneeLoader.load('img/player/GinSx.png'),
+											});
+
+				const leftKnee = new THREE.Mesh( new THREE.BoxGeometry(kneeWidth,kneeHeight,kneeDepth), leftKneeMaterial );
+				leftKnee.position.y = - (upperLegHeight/2 + kneeHeight/2);
+
+				let rightKneeLoader = new THREE.TextureLoader();	
+				const rightKneeMaterial = new THREE.MeshBasicMaterial({
+												map: rightKneeLoader.load('img/player/GinDx.png'),
+											});
+
+				const rightKnee = new THREE.Mesh( new THREE.BoxGeometry(kneeWidth,kneeHeight,kneeDepth), rightKneeMaterial );
+				rightKnee.position.y = - (upperLegHeight/2 + kneeHeight/2);
+				
+				let leftLowerLegLoader = new THREE.TextureLoader();	
+				const leftLowerLegMaterial = new THREE.MeshBasicMaterial({
+												map: leftLowerLegLoader.load('img/player/PolSx.png'),
+											});
+
+				const leftLowerLeg = new THREE.Mesh( new THREE.BoxGeometry(lowerLegWidth,lowerLegHeight,lowerLegDepth), leftLowerLegMaterial );
+				leftLowerLeg.position.y = - (kneeHeight/2 + lowerLegHeight/2);
+
+				let rightLowerLegLoader = new THREE.TextureLoader();	
+				const rightLowerLegMaterial = new THREE.MeshBasicMaterial({
+												map: rightLowerLegLoader.load('img/player/PolDx.png'),
+											});
+
+				const rightLowerLeg = new THREE.Mesh( new THREE.BoxGeometry(lowerLegWidth,lowerLegHeight,lowerLegDepth), rightLowerLegMaterial );
+				rightLowerLeg.position.y = - (kneeHeight/2 + lowerLegHeight/2);
+
+				let FootLoader = new THREE.TextureLoader();	
+				const FootMaterial = new THREE.MeshBasicMaterial({
+												map: FootLoader.load('img/player/Piedi.png'),
+											});
+				
+				const leftFoot = new THREE.Mesh( new THREE.BoxGeometry(footWidth,footHeight,footDepth), FootMaterial );
+				leftFoot.position.y = - (lowerLegHeight/2 + footHeight/2);
+				leftFoot.position.z = - lowerLegDepth/2;
+
+				const rightFoot = new THREE.Mesh( new THREE.BoxGeometry(footWidth,footHeight,footDepth), FootMaterial );
+				rightFoot.position.y = - (lowerLegHeight/2 + footHeight/2);
+				rightFoot.position.z = - lowerLegDepth/2;
+
+				let neckLoader = new THREE.TextureLoader();	
+				const neckMaterial = new THREE.MeshBasicMaterial({
+												map: neckLoader.load('img/player/Collo.png'),
+											});
+
+				const neck = new THREE.Mesh( new THREE.BoxGeometry(neckWidth,neckHeight,neckDepth), neckMaterial );
+				neck.position.y = torsoHeight/2 + neckHeight/2;
+
+				let headLoader = new THREE.TextureLoader();	
+				const headMaterial = new THREE.MeshBasicMaterial({
+												map: headLoader.load('img/player/Testa.png'),
+											});
+
+				const head = new THREE.Mesh( new THREE.BoxGeometry(headWidth,headHeight,headDepth), headMaterial );
+				head.position.y = neckHeight/2 + headHeight/2;
+
+				const leftShoulder = new THREE.Mesh( new THREE.BoxGeometry(shoulderWidth,shoulderHeight,shoulderDepth), leftHipMaterial );
+				leftShoulder.position.x = - (torsoWidth/2 + shoulderWidth/2);
+				leftShoulder.position.y = torsoHeight/2 - shoulderHeight/2;
+
+				const rightShoulder = new THREE.Mesh( new THREE.BoxGeometry(shoulderWidth,shoulderHeight,shoulderDepth), rightHipMaterial );
+				rightShoulder.position.x = torsoWidth/2 + shoulderWidth/2;
+				rightShoulder.position.y = torsoHeight/2 - shoulderHeight/2;
+
+				const leftUpperArm = new THREE.Mesh( new THREE.BoxGeometry(upperArmWidth,upperArmHeight,upperArmDepth), leftUpperLegMaterial );
+				leftUpperArm.position.y = - (shoulderHeight/2 + upperArmHeight/2);
+
+				const rightUpperArm = new THREE.Mesh( new THREE.BoxGeometry(upperArmWidth,upperArmHeight,upperArmDepth), rightUpperLegMaterial );
+				rightUpperArm.position.y = - (shoulderHeight/2 + upperArmHeight/2);
+
+				const leftElbow = new THREE.Mesh( new THREE.BoxGeometry(elbowWidth,elbowHeight,elbowDepth), leftKneeMaterial );
+				leftElbow.position.y = - (upperArmHeight/2 + elbowHeight/2);
+
+				const rightElbow = new THREE.Mesh( new THREE.BoxGeometry(elbowWidth,elbowHeight,elbowDepth), rightKneeMaterial );
+				rightElbow.position.y = - (upperArmHeight/2 + elbowHeight/2);
+
+				const leftLowerArm = new THREE.Mesh( new THREE.BoxGeometry(lowerArmWidth,lowerArmHeight,lowerArmDepth), leftLowerLegMaterial );
+				leftLowerArm.position.y = - (elbowHeight/2 + lowerArmHeight/2);
+				
+				const rightLowerArm = new THREE.Mesh( new THREE.BoxGeometry(lowerArmWidth,lowerArmHeight,lowerArmDepth), rightLowerLegMaterial );
+				rightLowerArm.position.y = - (elbowHeight/2 + lowerArmHeight/2);
+
+				scene.add(player);
+
+				player.add(lumbarRegion);
+				
+				lumbarRegion.add(torso);
+				lumbarRegion.add(rightHip);
+				lumbarRegion.add(leftHip);
+
+				torso.add(neck);
+				torso.add(leftShoulder);
+				torso.add(rightShoulder);
+
+				neck.add(head);
+
+				leftShoulder.add(leftUpperArm);
+				rightShoulder.add(rightUpperArm);
+				
+				leftUpperArm.add(leftElbow);
+				rightUpperArm.add(rightElbow);
+
+				leftElbow.add(leftLowerArm);
+				rightElbow.add(rightLowerArm);
+
+				rightHip.add(rightUpperLeg);
+				leftHip.add(leftUpperLeg);
+
+				rightUpperLeg.add(rightKnee);
+				leftUpperLeg.add(leftKnee);
+
+				rightKnee.add(rightLowerLeg);
+				leftKnee.add(leftLowerLeg);
+
+				rightLowerLeg.add(rightFoot);
+				leftLowerLeg.add(leftFoot);
+
+				//Variable to manage when the menuScene has to be rendered.
+				let menuFlag = true;	
+				
+				//Function that allows the user to exit from the menu
+				//and play the game. To exit from the menu the user has to click on 
+				//the screen.
+				renderer.domElement.addEventListener( 'click', function () {
+					menuFlag = false;
+					
+					//If the player has win the game switch the winning writings with the menu writing 
+					if(endFlag) {
+						
+						menuLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the old writing
+							removeTexts(menuScene);
+
+							menuGeo = new THREE.TextBufferGeometry( '                   Welcome to the Maze ! \n\nPress the "W-A-S-D" keys or the arrow keys\nto move your player.\n\nPress "Space" to jump and "Shift" to slide.\nPress "1" to use the third person camera.\nPress "2" to use the first person camera.\nPress "esc" to return to the menu.\n\nClick on the screen to start/resume the game ! ', textProperties);
+							menuGeo.center();
+							menuNew = new THREE.Mesh(menuGeo,allertMaterial);
+							menuNew.name = "text";
+							menuScene.add(menuNew);
+						} );
+
+						endFlag = false;
+					}
+					
+				});
+
+				//Perspective Camera for the main scene representing the third person view.
+				const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+				player.add(camera);
+				camera.position.set(0,lumbarRegionHeight+torsoHeight+neckHeight+headHeight,10);
+				camera.lookAt(0,lumbarRegionHeight,0);
+
+				//Vector representing the position in the world of the camera.
+				//I will use it later to understand when I have to switch from 
+				//the third to the first person camera. 
+				let c = new THREE.Vector3();
+				camera.getWorldPosition(c);
+				
+				//Perspectiva Camera for the main scene representing the first person camera.
+				const cameraFirstPerson = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 1000 );
+				head.add(cameraFirstPerson);
+				cameraFirstPerson.position.z = - ( (headDepth/2) + 0.1);
+
+				//Ortographic camera for the overlayScene, it will contain the lives counter and 
+				//various other allerts.
+				const cameraOverlay = new THREE.OrthographicCamera( -window.innerWidth/2, window.innerWidth/2,window.innerHeight/2, -window.innerHeight/2, 0.1, 1000 );
+				cameraOverlay.position.z = 20;
+
+				//Creation of a 3D heart using the Bezier curves
+				const shape = new THREE.Shape();
+				const x = -2.5;
+				const y = -5;
+				shape.moveTo(x + 2.5, y + 2.5);
+				shape.bezierCurveTo(x + 2.5, y + 2.5, x + 2, y, x, y);
+				shape.bezierCurveTo(x - 3, y, x - 3, y + 3.5, x - 3, y + 3.5);
+				shape.bezierCurveTo(x - 3, y + 5.5, x - 1.5, y + 7.7, x + 2.5, y + 9.5);
+				shape.bezierCurveTo(x + 6, y + 7.7, x + 8, y + 4.5, x + 8, y + 3.5);
+				shape.bezierCurveTo(x + 8, y + 3.5, x + 8, y, x + 5, y);
+				shape.bezierCurveTo(x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5);
+
+				const extrudeSettings = {
+					steps: 2,  
+					depth: 2,  
+					bevelEnabled: true,  
+					bevelThickness: 1,  
+					bevelSize: 1,  
+					bevelSegments: 2,  
+				};
+
+				const geometry = new THREE.ExtrudeBufferGeometry(shape, extrudeSettings);
+				
+				//Creates and sets all the heart-shaped objects representing the player's lives on the overlayScene.
+				const life1 = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
+				life1.position.set(-window.innerWidth/2 + 40, window.innerHeight/2 - 40, -40 );
+				life1.rotation.z = degToRad(180);
+				const life2 = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
+				life2.position.set(-window.innerWidth/2 + 110, window.innerHeight/2 - 40, -40 );
+				life2.rotation.z = degToRad(180);
+				const life3 = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
+				life3.position.set(-window.innerWidth/2 + 180, window.innerHeight/2 - 40, -40 );
+				life3.rotation.z = degToRad(180);
+
+				//Scales the dimentions of the hearts.
+				life1.scale.set(5, 5, 5);
+				life2.scale.set(5, 5, 5);
+				life3.scale.set(5, 5, 5);
+				
+				//I Add the hearts on the overlayScene.
+				overlayScene.add(life1);
+				overlayScene.add(life2);
+				overlayScene.add(life3);
+
+				//Variables to manage the start of a new run and the instant of time in which this happens.
+				let start = false;
+				let totTime;
+				
+				//Variable to store the total time of a winning run;
+				let finalTime;
+				
+				//Variable to manage the victory of the game, when the player reach the exit.
+				let endFlag = false;
+
+				//Function to resize the canvas, the allerts on the overlayScene and the cameras' view when 
+				//the window is resized.
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				//Function to remove the writings from the "s" scene.
+				function removeTexts(s) {
+					for (let i = 0; i< s.children.length; i+=1) { 
+						if (s.children[i].name == "text")
+						s.remove(s.children[i]);
+					}
+				}
+
+				//Callback function to resize the canvas and the dimensions
+				//of the cameras when the windows is resixed.
+				function onWindowResize() {
+					
+					//Resizes the renderer by using the new dimensions of the window.
+					renderer.setSize( window.innerWidth, window.innerHeight);
+					
+					//Resizes the cameras' view by using the new dimensions of the window.
+					camera.aspect = window.innerWidth/ window.innerHeight;
+					
+					cameraFirstPerson.aspect = window.innerWidth/window.innerHeight;
+
+					cameraOverlay.left = -window.innerWidth/2;
+					cameraOverlay.right  =  window.innerWidth/2;
+					cameraOverlay.top = window.innerHeight/2
+					cameraOverlay.bottom  = -window.innerHeight/2
+
+					//Sets the position of the lives and of the plane behind the lives, by using the new dimensions of the window.
+					life1.position.set(-window.innerWidth/2 + 40, window.innerHeight/2 - 40, -40 );
+					life2.position.set(-window.innerWidth/2 + 110, window.innerHeight/2 - 40, -40 );
+					life3.position.set(-window.innerWidth/2 + 180, window.innerHeight/2 - 40, -40 );
+					overlayPlaneMesh.position.set(-window.innerWidth/2 + 110, window.innerHeight/2 - 40, -80);
+					
+					//I define the new size of the writing by using the smallest value between the height and the width of
+					//the window.
+					let s;
+
+					if( window.innerWidth < window.innerHeight) s = window.innerWidth/30;
+					else s = window.innerHeight/30;
+
+					//Creates the new writing on the "overlayScene", by using the new dimensions of the window:
+					
+					//Creates a new revival allert if the player has not a gameOver.
+					if(revivalFlag && !gameOver) {
+						
+						revLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the old writing
+							removeTexts(overlayScene);
+							
+							geo = new THREE.TextBufferGeometry( 'You lost a life, be careful !!! ', textProperties);
+							geo.center();
+							textNew = new THREE.Mesh(geo,allertMaterial);
+							textNew.name = "text";
+
+							overlayScene.add(textNew);
+							
+							//In the case the user resized the window after the end of the duration of the text 
+							//and the jump of time doesn't allow to correctly remove the texts.
+							if(revivalClock > bornDuration) overlayScene.remove(textNew);
+
+						} );	
+					} 
+					//Updates the revival allert.
+					else {
+						revLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the old writing
+							removeTexts(overlayScene);
+							
+							geo = new THREE.TextBufferGeometry( 'You lost a life, be careful !!! ', textProperties);
+							geo.center();
+							textNew = new THREE.Mesh(geo,allertMaterial);
+							textNew.name = "text";
+				
+						} );	
+					}
+
+					//Creates a new game over allert if the player has a gameOver.
+					if(gameOver) {
+
+						let string = '     GAME OVER!\n        Try Again\n   Your time is:' + finalTime;	
+						gOverLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the old writing
+							removeTexts(overlayScene);
+
+							geo2 = new THREE.TextBufferGeometry( string, textProperties);
+							geo2.center();
+							gOverNew = new THREE.Mesh(geo2,allertMaterial);
+							gOverNew.name = "text";
+							overlayScene.add(gOverNew);
+
+							//In the case the user resized the window after the end of the duration of the text 
+							//and the jump of time doesn't allow to correctly remove the texts.
+							if(revivalClock > bornDuration) overlayScene.remove(gOverNew);
+						} );
+					}
+
+					//Creates a new invincible allert if the player has taken an invincibility perk.
+					if(invFlag) {
+
+						let string = 'Invincibility for 10 seconds';
+						invLoader.load( 'Font/helvetiker_regular.typeface.json', function (font) {
+							
+							textProperties = {
+								font: font,
+								size: s,
+								height: 5,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+
+							};
+						
+							//Removes the old writing
+							removeTexts(overlayScene);
+
+							geo3 = new THREE.TextBufferGeometry( string, textProperties);
+							geo3.center();
+							invTextNew = new THREE.Mesh(geo3,allertMaterial);
+							invTextNew.position.y = window.innerHeight/2 - window.innerWidth/30;
+							invTextNew.name = "text";
+							overlayScene.add(invTextNew);
+
+						} );	
+					}
+					
+					//Creates a new menu allert if the player has not won the game.
+					if(!endFlag) {
+
+						menuLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the old writing
+							removeTexts(menuScene);
+
+							menuGeo = new THREE.TextBufferGeometry( '                   Welcome to the Maze ! \n\nPress the "W-A-S-D" keys or the arrow keys\nto move your player.\n\nPress "Space" to jump and "Shift" to slide.\nPress "1" to use the third person camera.\nPress "2" to use the first person camera.\nPress "esc" to return to the menu.\n\nClick on the screen to start/resume the game ! ', textProperties);
+							menuGeo.center();
+							menuNew = new THREE.Mesh(menuGeo,allertMaterial);
+							menuNew.name = "text";
+							menuScene.add(menuNew);
+						} );
+
+					}
+					//Creates a new winning allert if the player has won the game.
+					else {
+
+						menuLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the old writing
+							removeTexts(menuScene);
+
+							menuGeo = new THREE.TextBufferGeometry( '                You reach the exit !\n                  Your time is:'+ finalTime +'\n\nClick on the screen to restart the game.\n              Try to beat your time !', textProperties);
+							menuGeo.center();
+							menuNew = new THREE.Mesh(menuGeo,allertMaterial);
+							menuNew.name = "text";
+							menuScene.add(menuNew);
+						} );
+					}
+
+					//Sets the new distance that the texts will have to cover.
+					//The gameOver allert is more greater than the allert of a loss of a life,
+					//so the two texts have to cover different distances to vanish out of the screen. 
+					if(!gameOver) textHeight = (window.innerHeight/2)+200;
+					else textHeight = (window.innerHeight/2)+40;
+					
+					//Updates the Projection Matrices of the cameras.
+					camera.updateProjectionMatrix();
+					cameraFirstPerson.updateProjectionMatrix();
+					cameraOverlay.updateProjectionMatrix();
+
+				}
+				
+				//Auxiliary functions to convert the radians to the degrees and vice-versa.
+				function degToRad(deg) {
+					return deg * (Math.PI/180);
+				}
+				function radToDeg(rad) {
+					return rad*(180/Math.PI);
+				}
+				
+				//All the positions for the spawn of the player.
+				let i1=2,i2=7,i3=6;
+				let j1=3,j2=13,j3=22;
+				
+				//Variables to store the initial position of the player.
+				let startingPos;
+				let xPos, yPos=0, zPos;
+
+				//Number of lifes.
+				let endGame = 3;
+
+				//Auxiliary function to define the starting position of the player.
+				function setSpawnPosition() {
+					
+					//Variable that defines the initial position of the player.
+					if(endGame==0) startingPos = Math.floor(Math.random() * (2.9));
+					
+					yPos=0;
+					if(startingPos==2) {
+						xPos=(j3 - colsCenter) * wallBase;
+						zPos=(i3 - rowsCenter) * wallBase;
+					}
+					else if(startingPos==1) {
+						xPos=(j2 - colsCenter) * wallBase;
+						zPos=(i2 - rowsCenter) * wallBase;
+					}
+					else{
+						xPos=(j1 - colsCenter) * wallBase;
+						zPos=(i1 - rowsCenter) * wallBase;
+					}
+
+					player.position.set(xPos,yPos,zPos);
+
+				}
+
+				const map = [ [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+							[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 12, 1],
+							[1, 0, 0, 0.1, 0, 1, 0, 7, 0, 0, 0, 8, 0, 0, 0, 7, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 1],
+							[1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1],
+							[1, 0, 10, 11, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 10, 0, 1, 0, 0, 0, 1, 3, 3, 1, 1, 0, 1],
+							[1, 0, 0, 10, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 10, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 13, 1],
+							[1, 0, 0, 1, 1, 1, 9, 9, 1, 1, 1, 1, 3, 3, 1, 1, 1, 0, 0, 1, 0, 0, 0.1, 0, 1, 0, 1],
+							[1, 9, 9, 1, 0, 0, 0, 0, 8, 0, 0, 1, 0, 0.1, 1, 10, 10, 10, 10, 1, 0, 0, 0, 0, 1, 0, 1],
+							[1, 0, 0, 1, 0, 0, 0, 0, 8, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 11, 11, 1, 1, 1, 0, 1],
+							[1, 0, 0, 1, 1, 1, 1, 1, 1, 5, 5, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+							[1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1],
+							[1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 1, 0, 0, 11, 0, 0, 0, 0, 1, 10, 10, 1, 1, 1, 0, 1],
+							[1, 1, 1, 10, 10, 1, 10, 10, 1, 0, 0, 1, 0, 0, 0, 0, 11, 0, 0, 1, 0, 0, 0, 0, 0, 10, 1],
+							[1, 0, 11, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 10, 0, 0, 0, 0, 10, 0, 1],
+							[1, 0, 11, 0, 0, 1, 0, 12, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 10, 11, 11, 1, 1, 1, 0, 1],
+							[1, 0, 0, 1, 1, 1, 1, 1, 1, 5, 5, 1, 0, 14, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+							[1, 5, 5, 1, 0, 0, 2, 0, 0, 0, 0, 1, 0, 14, 0, 0, 8, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+							[1, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 8, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1],
+							[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 10, 4, 0, 1, 1, 1, 1, 1, 1],
+							[1, 10, 10, 1, 10, 10, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 10, 4, 0, 10, 8, 0, 0, 0, 1],
+							[1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 10, 4, 0, 10, 8, 0, 0, 0, 1],
+							[1, 0, 0, 1, 0, 0, 0, 0, 13, 1, 0, 0, 2, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
+							[1, 3, 3, 1, 0, 0, 0, 0, 0, 1, 10, 10, 2, 0, 0, 12, 0, 1, 0, 0, 2, 0, 0, 1, 5, 5, 1],
+							[1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 5, 5, 1, 1, 1, 9, 9, 1, 0, 0, 2, 0, 0, 1, 0, 0, 1],
+							[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+							[1, 0, 0, 10, 10, 1, 0, 0, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],
+							[1, 1, 1, 5, 5, 1, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 7, 0, 1, 1, 10, 10, 10, 1],
+							[1, 0, 10, 0, 0, 2, 0, 0, 8, 0, 0, 10, 0, 0, 10, 0, 10, 0, 0, 0, 0, 0, 1, 10, 11, 11, 1],
+							[1, 12, 10, 0, 0, 2, 0, 0, 8, 0, 6, 10, 10, 0, 0, 6, 10, 0, 0, 1, 10, 10, 1, 11, 10, 10, 1],
+							[1, 0, 10, 0, 0, 2, 0, 0, 8, 0, 0, 10, 0, 0, 10, 0, 10, 0, 0, 1, 0, 0, 1, 11, 10, 13, 1],
+							[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+				];
+
+				//Dimentions of the maze (rows and columns) and its center.
+				const rows = map.length;
+				const cols = map[0].length;
+				const rowsCenter = (rows - 1)/2;
+				const colsCenter = (cols - 1)/2;
+
+				//Spatial dimentions of a single element of the matrix that represents the maze.
+				const wallBase = 10;
+				const wallHeight = 30;
+				
+				//Creating the geometry for the floor and the ceiling of the maze.
+				const planeGeometry = new THREE.PlaneBufferGeometry(wallBase*cols, wallBase*rows);
+
+				//Loads the texture and creates the material for the floor and the ceiling of the maze.
+				let floor_ceil_Texture = new THREE.TextureLoader().load('img/pavimento_soffitto.jpg');
+				floor_ceil_Texture.wrapS = THREE.RepeatWrapping;
+				floor_ceil_Texture.wrapT = THREE.RepeatWrapping;
+				floor_ceil_Texture.repeat.set( 15, 50 );
+				
+				const planeMaterial = new THREE.MeshPhongMaterial({map: floor_ceil_Texture});
+				
+				//Creating the floor plane object.
+				const floorMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+				floorMesh.rotation.x = Math.PI * -.5;
+				floorMesh.position.y = - 0.3;
+				scene.add(floorMesh);		
+
+				//Creating the ceiling plane object.
+				const ceilMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+				ceilMesh.rotation.x = Math.PI * .5;
+				ceilMesh.position.y = wallHeight;
+				scene.add(ceilMesh);	
+				
+				//Creating the background plane for the lives in the overlayScene.
+				const overlayPlaneGeometry = new THREE.PlaneBufferGeometry(45, 15);
+				const overlayPlaneMaterial = new THREE.MeshPhongMaterial({color: 0x000000, opacity: 0.5, transparent: true});
+				const overlayPlaneMesh = new THREE.Mesh(overlayPlaneGeometry, overlayPlaneMaterial);
+				overlayPlaneMesh.position.set(-window.innerWidth/2 + 110, window.innerHeight/2 - 40, -80 );
+				overlayPlaneMesh.scale.set(5, 5, 5);
+				overlayScene.add(overlayPlaneMesh);
+
+				//Loaders for the font of the allerts.
+				let revLoader = new THREE.FontLoader();
+				let gOverLoader = new THREE.FontLoader();
+				let invLoader = new THREE.FontLoader();
+				let menuLoader = new THREE.FontLoader();
+
+				//Variables for storing the allert objects
+				//and for removing and adding the resized allerts
+				//when the window is resized.
+				let textNew;
+				let gOverNew;
+				let menuNew;
+				let invTextNew;
+
+				//Variables for the properties of the allerts' text and
+				//their geometry. 
+				let textProperties;
+				let geo, geo2, geo3, menuGeo;
+				
+				//I create the material for the allerts.
+				const allertMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
+				
+				let s;
+				if( window.innerWidth < window.innerHeight)
+					s = window.innerWidth/30;
+				else 
+					s = window.innerHeight/30;
+
+				//Allert for the initial menu, this text is rendered on the menuScene.
+				menuLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+					textProperties = {
+						font: font,
+						size: s,
+						height: 2,
+						curveSegments: 12,
+						bevelEnabled: true,
+						bevelThickness: 0,
+						bevelSize: 1,
+						bevelOffset: 0,
+						bevelSegments: 5
+					};
+					menuGeo = new THREE.TextBufferGeometry( '                   Welcome to the Maze ! \n\nPress the "W-A-S-D" keys or the arrow keys\n to move your player.\nPress "Space" to jump and "Shift" to slide.\nPress "1" to use the third person camera.\nPress "2" to use the first person camera.\nPress "esc" to return to the menu.\n\nClick on the screen to start/resume the game ! ', textProperties);
+					menuGeo.center();
+					menuNew = new THREE.Mesh(menuGeo,allertMaterial);
+					menuNew.name = "text";
+					menuScene.add(menuNew);
+				} );
+
+				//Allert for the loss of a life, this text is rendered on the overlayScene.
+				revLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+					textProperties = {
+						font: font,
+						size: s,
+						height: 2,
+						curveSegments: 12,
+						bevelEnabled: true,
+						bevelThickness: 0,
+						bevelSize: 1,
+						bevelOffset: 0,
+						bevelSegments: 5
+					};
+					geo = new THREE.TextBufferGeometry( 'You lost a life, be careful !!! ', textProperties);
+					geo.center();
+					textNew = new THREE.Mesh(geo,allertMaterial);
+					textNew.name = "text";
+				} );
+
+				
+				//Allert for the game over, this text is rendered on the overlayScene.		
+				gOverLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+					textProperties = {
+						font: font,
+						size: s,
+						height: 2,
+						curveSegments: 12,
+						bevelEnabled: true,
+						bevelThickness: 0,
+						bevelSize: 1,
+						bevelOffset: 0,
+						bevelSegments: 5
+					};
+
+					geo2 = new THREE.TextBufferGeometry( 'GAME OVER!\n   Try Again\n', textProperties);
+					geo2.center();
+					gOverNew = new THREE.Mesh(geo2,allertMaterial);
+					gOverNew.name = "text";
+
+				} );
+
+				//List for storing the walls' bounds that are used to check
+				//if the player has a collision with them. 
+				let walls = [];
+
+				//Flag for check if the player has taken the invincibility perk.
+				let invFlag = false;
+				//Duration of the invincibility.
+				const invDuration = 10;
+				//Timer to store the start time of the invincibility. 
+				let startInv;
+
+				//Variables to store the bounds of the objects that are used to
+				//check if there is a collision with the player.
+				let stationaryCylinders = [];
+				let movingCylinders = [];
+				let movingSpikePlanes = [];
+				let movingStones = [];
+				let heartPerk = [];
+				let invPerk = [];
+				let endWall = [];
+
+				//Variables to store the "Box3" objects that I used to
+				//extract the bounds for the collision detection.
+				let updateBoxObject = [];
+				let updatePlaneBoxObject = [];
+				let updateStoneBoxObject = [];
+				let updateHeartBoxObject = [];
+				let updateInvBoxObject = [];
+				let cylindersBoxes = [];
+				let spikePlaneBoxes = [];
+				let stoneBoxes = [];
+				let heartBoxes = [];
+				let invBoxes = [];
+				let endBoxes = [];
+
+				//Variables to store the obstacle's objects 
+				//whose position have to be updated.
+				let yRotCylinders = [];
+				let xRotCylinders = [];
+				let yRotPerks = [];
+
+				let zMovCylinders = [];
+				let xMovCylinders = [];
+				let yMovCylinders = [];
+				let yMovSpikePlanes = [];
+				let yMovStones = [];
+
+				let zPosCylinders = [];
+				let xPosCylinders = [];
+				let yPosCylinders = [];							
+				
+				//Variables to store the objects,the boxes and the bounds of the 
+				//perks hitted by the player. 
+				let heartRemovedObj = [];
+				let heartRemovedIndex = [];
+				let heartRemovedBoxes = [];
+				let heartRemovedBounds = [];
+				let invRemovedObj = [];
+				let invRemovedIndex = [];
+				let invRemovedBoxes = [];
+				let invRemovedBounds = [];
+
+				//Auxiliary function to create the bounds from an object's box. 
+				function createBounds(box) {
+					let bounds = {
+						xMin: box.min.x,
+						xMax: box.max.x,
+						yMin: box.min.y,
+						yMax: box.max.y,
+						zMin: box.min.z,
+						zMax: box.max.z,
+					};
+					return bounds;
+				}						
+
+				//The value 0.1 in the maze represents a possible starting position of the player.
+				//The starting position is chosen by using the value of the startingPos variable.
+				startingPos = Math.floor(Math.random() * (2));
+				setSpawnPosition();
+
+				//Cicle that inizializes the maze's walls, the obstacles, the perks and lights in the maze. 
+				for (let i = 0; i < rows; i++) {
+					for (let j = 0; j < cols; j++) {
+						
+						//Creates the light in the maze
+						if (i%4==0 && j%4==0 && map[i][j]!=1) {
+							
+							//Creates the lamp from which the light will come out. 
+							const lampGeometry = new THREE.BoxBufferGeometry( wallBase*0.25, wallBase*0.25, wallBase*0.25 );
+
+							let loader = new THREE.TextureLoader();	
+
+							const lampMaterial = new THREE.MeshBasicMaterial({
+														map: loader.load('img/luce.jpg'),
+													});
+
+							let lamp = new THREE.Mesh( lampGeometry, lampMaterial );
+							
+							//The position of the lamp object
+							lamp.position.z = (i - rowsCenter) * wallBase;
+							lamp.position.y = wallHeight-(wallHeight*0.15)/2 - 1;
+							lamp.position.x = (j - colsCenter) * wallBase;
+							scene.add(lamp);
+							
+							//Creates a white point light object with intensity 1 and 
+							//distance of the light equal to 40.
+							const color = 0xFFFFFF;
+							const intensity = 1;
+							const luce = new THREE.PointLight(color, intensity);
+							//Setting the position inside the lamp object
+							luce.position.set(lamp.position.x, lamp.position.y, lamp.position.z);
+							luce.distance = 40;
+							scene.add(luce);
+							
+						}
+
+						// The value 1 in the maze represents a wall.
+						if (map[i][j]==1) {
+							
+							//Loading the texture of the wall
+							let wallTexture = new THREE.TextureLoader().load('img/parete.jpg');
+							wallTexture.wrapS = THREE.RepeatWrapping;
+							wallTexture.wrapT = THREE.RepeatWrapping;
+							wallTexture.repeat.set( 1, 4);
+							const wallMaterial = new THREE.MeshPhongMaterial({
+														map: wallTexture });
+							//Creating the geometry							
+							const cubeGeo = new THREE.BoxGeometry(wallBase, wallHeight, wallBase);
+
+							//Creates a wall object
+							let cube = new THREE.Mesh(cubeGeo, wallMaterial); 
+							
+							//Setting the wall position
+							cube.position.z = (i - rowsCenter) * wallBase;
+							cube.position.y = wallHeight/2;
+							cube.position.x = (j - colsCenter) * wallBase;
+
+							//Adding the wall to the scene
+							scene.add(cube);
+
+							//Creating the bounding box of the wall	
+							let bbox = new THREE.Box3().setFromObject( cube );
+							
+							//Taking the bounds from the bounding box
+							let bounds = createBounds(bbox);
+							
+							//Pushing the buonds object in the list that
+							//will be used to check the collisions with the player.
+							walls.push( bounds );
+
+						}	
+
+						//The numbers 2-3 correspond to a low horizontal cylinder,
+						//2 if it is rotating around x axis and 3 if it is rotating around 
+						//z axis. The number 4,5 correspond to a high horizontal cylinder,
+						//4 if it is rotating around x axis and 5 if it is rotating around 
+						//z axis.
+						else if(2 <= map[i][j] && map[i][j] <= 5) {
+
+							//Creates a new cylinder object.
+							let cylinder = newCylinder();
+
+							//Defines the position of the cylinder.
+							cylinder.position.z = (i - rowsCenter) * wallBase;
+							if(map[i][j]==2 || map[i][j]==3) cylinder.position.y = wallHeight/6;
+							else cylinder.position.y = wallHeight*(2/5);
+							cylinder.position.x = (j - colsCenter) * wallBase;
+
+							//Inserts the cylinder object in the right list and
+							//sets its orientation. 
+							switch(map[i][j]) {
+								case 2:
+								case 4:
+									cylinder.rotation.x = degToRad(-90);
+									yRotCylinders.push(cylinder);
+									break;
+								case 3:
+								case 5:
+									cylinder.rotation.z = degToRad(-90);
+									xRotCylinders.push(cylinder);
+									break;
+							}
+							
+							//Creates the bounding box of the cylinder.
+							let bbox = new THREE.Box3().setFromObject( cylinder );
+							
+							//Takes the bounds from the bounding box.
+							let bounds = createBounds(bbox);
+							
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							stationaryCylinders.push( bounds );
+
+						}
+						//The numbers 6-7 correspond to two cylinders,putted on the same line,
+						//moving on the z and x axis.
+						else if(6 == map[i][j] || map[i][j] == 7) {
+
+							//Creates the cylinders
+							let cylinder1 = newCylinder();
+							let cylinder2 = newCylinder();
+
+							//Defines the position on the y axis.
+							cylinder1.position.y = wallBase/2;
+							cylinder2.position.y = wallBase/2;
+							
+							//Defines the position of the cylinders and the correct list in which they have to be putted
+							//to compute their movements. I also stored their initial position because i will use it 
+							//to compute their new position starting from their initial one. 
+							switch(map[i][j]) {
+								case 6:
+									cylinder1.position.x = (j - colsCenter) * wallBase;
+									cylinder2.position.x = (j - colsCenter) * wallBase;
+									cylinder1.position.z = (i - rowsCenter) * wallBase + wallBase*0.75;
+									cylinder2.position.z = (i - rowsCenter) * wallBase - wallBase*0.75;
+									zMovCylinders.push(cylinder1);
+									zMovCylinders.push(cylinder2);
+									zPosCylinders.push(cylinder1.position.z);
+									zPosCylinders.push(cylinder2.position.z);
+									break;
+								case 7:									
+									cylinder1.position.x = (j - colsCenter) * wallBase - wallBase*0.75;
+									cylinder2.position.x = (j - colsCenter) * wallBase + wallBase*0.75;
+									cylinder1.position.z = (i - rowsCenter) * wallBase;
+									cylinder2.position.z = (i - rowsCenter) * wallBase;
+									xMovCylinders.push(cylinder1);
+									xMovCylinders.push(cylinder2);
+									xPosCylinders.push(cylinder1.position.x);
+									xPosCylinders.push(cylinder2.position.x);
+									break;
+							}
+
+							//Puts the object in the list of objects that rotate about the y axis.
+							yRotCylinders.push(cylinder1);
+							yRotCylinders.push(cylinder2);
+
+							//Puts the cylinder object in the list that is used to update the bounding box
+							//of the object (because these objects are moving).
+							updateBoxObject.push(cylinder1);
+							updateBoxObject.push(cylinder2);
+
+							//Creates the bounding box of the cylinder.
+							let bbox1 = new THREE.Box3().setFromObject( cylinder1 );
+							let bbox2 = new THREE.Box3().setFromObject( cylinder2 );
+
+							//Takes the bounds from the bounding box.
+							let bounds1 = createBounds(bbox1);
+							let bounds2 = createBounds(bbox2);
+							
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							movingCylinders.push( bounds1 );
+							movingCylinders.push( bounds2 );
+
+							//Stores the bounding box of the moving cylinders. 
+							cylindersBoxes.push(bbox1);
+							cylindersBoxes.push(bbox2);
+							
+						}
+						//The numbers 8-9 correspond to a horizontal cylinder,
+						//8 if it is rotating around the x axis and 9 if it is rotating around the
+						//z axis. Both of them are moving on the y axis.
+						else if(8 == map[i][j] || map[i][j] == 9) {
+							
+							//Creates the cylinder.
+							let cylinder1 = newCylinder();
+
+							//Defines the position.
+							cylinder1.position.y = wallHeight*0.30;
+							cylinder1.position.x = (j - colsCenter) * wallBase;
+							cylinder1.position.z = (i - rowsCenter) * wallBase;
+
+							//Defines its rotation and the correct list in which the cylinder has to be putted
+							//to compute its movements. I also stored its initial position because i will use it 
+							//to compute its new position starting from its initial one. 
+							switch(map[i][j]) {
+								case 8:
+									cylinder1.rotation.x = degToRad(-90);
+									yMovCylinders.push(cylinder1);
+									yPosCylinders.push(cylinder1.position.y);
+									yRotCylinders.push(cylinder1);
+									break;
+								case 9:		
+									cylinder1.rotation.z = degToRad(-90);						
+									yMovCylinders.push(cylinder1);
+									yPosCylinders.push(cylinder1.position.y);
+									xRotCylinders.push(cylinder1);
+									break;
+							}
+
+							//Puts the cylinder object in the list that is used to update the bounding box
+							//of the object (because these objects are moving).
+							updateBoxObject.push(cylinder1);
+
+							//Creates the bounding box of the cylinder.
+							let bbox1 = new THREE.Box3().setFromObject( cylinder1 );
+
+							//Takes the bounds from the bounding box.
+							let bounds1 = createBounds(bbox1);
+							
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							movingCylinders.push( bounds1 );
+
+							//Stores the bounding box of the moving cylinders. 
+							cylindersBoxes.push(bbox1);
+
+						}
+						//The number 10 corresponds to a plane of spikes.
+						else if(map[i][j]==10) {
+
+							//Defines an object3D on which there will be the spikes and the circles.
+							let plane = new THREE.Object3D();
+
+							//A list of circles that will show where the spikes will come out of the floor.
+							let circles = [];
+
+							//Creates the plane of spikes.
+							let spikePlane = newSpikesPlane(circles);
+
+							//Adds the plane of spikes to the object3D.
+							plane.add(spikePlane);
+							
+							//Adds the circles to the object3D.
+							for(let i=0;i<circles.length;i+=1) plane.add(circles[i]);
+
+							//Defines the position of the object3D in the maze and adds it to the scene
+							plane.position.x = (j - colsCenter) * wallBase;
+							plane.position.z = (i - rowsCenter) * wallBase;
+							scene.add(plane);
+
+							//Defines the correct list in which hte object has to be putted
+							//to compute its movement.
+							yMovSpikePlanes.push(spikePlane);
+
+							//Creates the bounding box of the plane of spikes.
+							let bbox1 = new THREE.Box3().setFromObject( spikePlane );
+							
+							//Takes the bounds from the bounding box.
+							let bounds1 = createBounds(bbox1);
+
+							//Puts the plane of spikes object in the list that is used to update the bounding box
+							//of the object (because these objects are moving).
+							updatePlaneBoxObject.push(spikePlane);
+
+							//Stores the bounding box of the moving cylinders. 
+							spikePlaneBoxes.push(bbox1);
+
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							movingSpikePlanes.push(bounds1);
+
+						}
+						//The number 11 corresponds to pieces of the ceiling that are falling down.
+						else if(map[i][j]==11) {
+							
+							//Creates the object
+							let stones = [];
+							let plane = new newStones(stones);
+
+							//Define the initial position (the initial y is equal for all of them)
+							plane.position.x = (j - colsCenter) * wallBase;
+							plane.position.z = (i - rowsCenter) * wallBase;
+
+							for(let i=0;i<stones.length;i+=1) {
+
+								//Creates the bounding box of the single stone.
+								let bbox1 = new THREE.Box3().setFromObject(stones[i]);
+
+								//Defines the correct list in which it has to be putted
+								//to compute its movement.
+								yMovStones.push(stones[i]);
+
+								//Takes the bounds from the bounding box.
+								let bounds1 = createBounds(bbox1);
+
+								//Puts a single stone object in the list that is used to update the bounding box
+								//of the object (because these objects are moving).
+								updateStoneBoxObject.push(stones[i]);
+								
+								//Stores the bounding box of the stone. 
+								stoneBoxes.push(bbox1);
+
+								//Inserts the buonds' object in the list that
+								//will be used to check the collisions with the player.
+								movingStones.push(bounds1);
+							}
+						}
+						//The number 12 corresponds to the heart perk.
+						else if (map[i][j]==12) {
+
+							//Creates the box geometry that representing the perk and load the texture.
+							const heartGeometry = new THREE.BoxBufferGeometry( 4, 4, 4 );
+							
+							let loader = new THREE.TextureLoader();	
+							
+							const heartMaterial = new THREE.MeshBasicMaterial({
+														map: loader.load('img/cuore.jpg'),
+													});
+												
+							let heart = new THREE.Mesh( heartGeometry, heartMaterial );
+							
+							//Define the position and orientation of the heart perk
+							heart.position.z = (i - rowsCenter) * wallBase;
+							heart.position.y = 3;
+							heart.position.x = (j - colsCenter) * wallBase;
+							heart.rotation.z = degToRad(45);	
+							scene.add(heart);
+							
+							//Defines the correct list in which it has to be putted
+							//to compute its movement.
+							yRotPerks.push(heart);
+							
+							//Creates the bounding box of the heart perk.
+							let bbox1 = new THREE.Box3().setFromObject(heart);
+
+							//Takes the bounds from the bounding box.
+							let bounds1 = createBounds(bbox1);
+							
+							//Puts the heart perk object in the list that is used to update the bounding box
+							//of the object (because thise object are moving).
+							updateHeartBoxObject.push(heart);
+							
+							//Stores the bounding box of the heart perk. 
+							heartBoxes.push(bbox1);
+							
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							heartPerk.push(bounds1);
+
+						}
+						//The number 13 corresponds to the invincibility perk.
+						else if (map[i][j]==13) {
+
+							//Creates the box geometry that representing the perk and load the texture.
+							const invGeometry = new THREE.BoxBufferGeometry( 4, 4, 4 );
+
+							let loader = new THREE.TextureLoader();	
+
+							const invMaterial = new THREE.MeshBasicMaterial({
+														map: loader.load('img/inv.jpeg'),
+													});
+
+							let inv = new THREE.Mesh( invGeometry, invMaterial );
+							
+							//Define the position and orientation of the invincibility perk
+							inv.position.z = (i - rowsCenter) * wallBase;
+							inv.position.y = 3;
+							inv.position.x = (j - colsCenter) * wallBase;
+							inv.rotation.z = degToRad(45);	
+							scene.add(inv);
+
+							//Defines the correct list in which it has to be putted
+							//to compute its movement.
+							yRotPerks.push(inv);
+
+							//Creates the bounding box of the invincibility perk.		
+							let bbox1 = new THREE.Box3().setFromObject(inv);
+
+							//Takes the bounds from the bounding box.
+							let bounds1 = createBounds(bbox1);
+							
+							//Puts the invincibility perk object in the list that is used to update the bounding box
+							//of the object (because this object is moving).
+							updateInvBoxObject.push(inv);
+							
+							//Stores the bounding box of the invincibility perk. 
+							invBoxes.push(bbox1);
+							
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							invPerk.push(bounds1);
+
+						}
+						//The numner 14 defines the ladders to reach the exit. 
+						else if (map[i][j]==14) {
+
+							//Creates the box that represents the ladder and load the texture.
+							const endGeometry = new THREE.BoxBufferGeometry( wallBase*.5, wallHeight*1.15, wallBase*.5 );
+
+							let loader = new THREE.TextureLoader();	
+
+							const endMaterial = new THREE.MeshBasicMaterial({
+														map: loader.load('img/scala.png'),
+													});
+
+							let end = new THREE.Mesh( endGeometry, endMaterial );
+							
+							//Define the position of the ladder
+							end.position.z = (i - rowsCenter) * wallBase;
+							end.position.y = wallHeight/2;
+							end.position.x = (j - colsCenter) * wallBase;
+
+							scene.add(end);
+							
+							//Creates the bounding box of the ladder.
+							let bbox1 = new THREE.Box3().setFromObject(end);
+
+							//Takes the bounds from the bounding box.
+							let bounds1 = createBounds(bbox1);
+							
+							//Inserts the buonds' object in the list that
+							//will be used to check the collisions with the player.
+							endWall.push(bounds1);
+							
+							//Define a black plane that will be putted over the ladder.
+							const endGeometry1 = new THREE.PlaneBufferGeometry(wallBase, wallBase);
+							const endMaterial1 = new THREE.MeshBasicMaterial({ color: 0x000000 });
+											
+							let endMesh = new THREE.Mesh(endGeometry1, endMaterial1);
+							endMesh.position.set(end.position.x, wallHeight-0.1, end.position.z);
+							endMesh.rotation.x = Math.PI * .5;
+							endMesh.receiveShadow = true;
+							scene.add(endMesh);
+						}
+						
+					}
+				}
+
+				//Variables used to define the movement of the player.
+				let walking = false;
+				let moveForward = false;
+				let moveBackward = false;
+				let moveRight = false;
+				let moveLeft = false;
+				let jump = false;
+				let Slide = false;
+				let startJump;
+				let startSlide;
+				let startWalk = isNaN;
+
+				let startUp = 70;
+				let startDown = 90;
+				let startLeft = 160;
+
+				let revivalFlag = false;
+				let startRevival;
+
+				//Flags to switch from the third person camera to the first person camera.
+				let firstPerson = false;
+				let first = false;
+
+				//Function to manage the keyDown events.
+				let onKeyDown = function ( event ) {
+					//The player can moves only if it is not in the menu
+					//or it is not just dead.
+					if(!revivalFlag && !menuFlag) {
+						//The flag 'start' takes the current time only at the 
+						//beginnig of a new run.
+						//If the player is not moving, the corresponding flag
+						//is set to true only if the user presses the corresponding key, and a timer that defines
+						//the animation of the movement is initialized. 
+						switch ( event.keyCode ) {
+							case 38: // up
+							case 87: // w
+								if(!moveForward) {
+									moveForward = true;
+									if (isNaN(startWalk))
+										startWalk = performance.now()/1000;
+								}
+								if (!start)	 {
+										totTime = performance.now()/1000;
+										start = true;
+									}
+								break;
+
+							case 37: // left
+							case 65: // a
+								if(!moveLeft) {
+									moveLeft = true;
+									if (isNaN(startWalk))
+										startWalk = performance.now()/1000;
+								}
+								if (!start)	 {
+										totTime = performance.now()/1000;
+										start = true;
+									}
+								break;
+
+							case 40: // down
+							case 83: // s
+								if(!moveBackward) {
+									moveBackward = true;
+									if (isNaN(startWalk))
+										startWalk = performance.now()/1000;
+								}
+								if (!start)	 {
+										totTime = performance.now()/1000;
+										start = true;
+									}
+								break;
+
+							case 39: // right
+							case 68: // d
+								if(!moveRight) {
+									moveRight = true;
+									if (isNaN(startWalk))
+										startWalk = performance.now()/1000;
+								}
+								if (!start)	 {
+										totTime = performance.now()/1000;
+										start = true;
+									}
+								break;
+							//The player can jump only if it is not jumping 
+							//and not sliding.
+							case 32: // space
+								if (!jump && !Slide) {
+									jump = true;
+									startUp = 70;
+									startDown = 90;
+									startLeft = 160;
+									startJump = performance.now()/1000;
+								}
+								if (!start)	 {
+										totTime = performance.now()/1000;
+										start = true;
+									}
+								break;
+							//The player can slide only if it is not jumping 
+							//and not sliding.
+							case 16: //Shift
+								if(!Slide && !jump) {
+									Slide = true;
+									startSlide = performance.now()/1000; 
+								}
+								if (!start)	 {
+									totTime = performance.now()/1000;
+									start = true;
+								}
+							break;
+							//Press 1 to turn up the third person camera. 
+							case 49: //Digit 1
+								first = false;
+								break;
+							//Press 2 to turn up the first person camera.
+							case 50: //Digit 2
+								first = true;
+								break;
+							//Press esc to go to the menu.
+							case 27: //esc
+								menuFlag = true;
+							break;
+						}
+					}
+
+				};
+
+				//Function to manage the keyUp events.
+				let onKeyUp = function ( event ) {
+					//It manages the stop of the movement in the corresponding
+					//direction.
+					switch ( event.keyCode ) {
+
+						case 38: // up
+						case 87: // w
+							moveForward = false;
+							break;
+
+						case 37: // left
+						case 65: // a
+							moveLeft = false;
+							break;
+
+						case 40: // down
+						case 83: // s
+							moveBackward = false;
+							break;
+
+						case 39: // right
+						case 68: // d
+							moveRight = false;
+							break;
+
+					}
+
+				};		
+
+				//Adds the event listener for the keydown and keyup events
+				document.addEventListener( 'keydown', onKeyDown, false );
+				document.addEventListener( 'keyup', onKeyUp, false );						
+
+				//Defines the bounding box of the player.
+				let box1 = new THREE.Box3().setFromObject( player );
+
+				//Variables used to create the bounds of the player's bounding box.
+				let xzDim = new THREE.Vector3();
+				let yDim = new THREE.Vector3();
+
+				//Takes the size of the bounding box of the player in the resting 
+				//position. The only bounds that change are the y bounds,
+				//because the player can jump or slide.
+				box1.getSize(xzDim);
+				box1.getSize(yDim);
+
+				//Function to detect the collisions between the player and the objects in the collisions list.
+				function playerDetectCollision(collisions) {
+
+					// Gets the user's current collision area, the x and z bounds represents
+					// the bounds of the player in the resting position and the y bounds
+					// are updated with the current position of the player (it is needed because of the sliding and jumping animation).
+					let bounds1 = {
+						xMin: player.position.x - xzDim.x / 2,
+						xMax: player.position.x + xzDim.x / 2,
+						yMin: player.position.y,
+						yMax: player.position.y + yDim.y,
+						zMin: player.position.z - xzDim.z / 2,
+						zMax: player.position.z + xzDim.z / 2,
+					};
+					
+					//Check if there is a collision between the player and the objects in the collisions list.
+					for ( let index = 0; index < collisions.length; index ++ ) {
+						if ( ( bounds1.xMin <= collisions[ index ].xMax && bounds1.xMax >= collisions[ index ].xMin ) &&
+							( bounds1.yMin <= collisions[ index ].yMax && bounds1.yMax >= collisions[ index ].yMin) &&
+							( bounds1.zMin <= collisions[ index ].zMax && bounds1.zMax >= collisions[ index ].zMin) ) return true;
+					}
+
+					return false;
+
+				}
+
+				//Function to check the collisions between the player and the heart perks.
+				function heartDetectCollision() {
+					
+					// Gets the user's current collision area, the x and z bounds represents
+					// the bounds of the player in the resting position and the y bounds
+					// are updated with the current position of the player (it is needed because of the sliding and jumping animation).
+					let bounds1 = {
+						xMin: player.position.x - xzDim.x / 2,
+						xMax: player.position.x + xzDim.x / 2,
+						yMin: player.position.y,
+						yMax: player.position.y + yDim.y,
+						zMin: player.position.z - xzDim.z / 2,
+						zMax: player.position.z + xzDim.z / 2,
+					};
+
+					//Check if there is a collision between the player and objects in the heartPerk list.
+					for ( let index = 0; index < heartPerk.length; index ++ ) {
+						if ( ( bounds1.xMin <= heartPerk[ index ].xMax && bounds1.xMax >= heartPerk[ index ].xMin ) &&
+							( bounds1.yMin <= heartPerk[ index ].yMax && bounds1.yMax >= heartPerk[ index ].yMin) &&
+							( bounds1.zMin <= heartPerk[ index ].zMax && bounds1.zMax >= heartPerk[ index ].zMin) ) {
+								//If there is a collision when the player has less than 3 lifes than 
+								//the corresponding heart perk object is removed from the scene and the corresponding
+								//box and bounds are removed from the corresponding lists (in order to not compute futher collisions)
+								if(endGame == 2 || endGame == 1) {
+									heartRemovedBounds.push(heartPerk[index]);
+									heartPerk.splice(index,1);
+									scene.remove(updateHeartBoxObject[index]);
+									heartRemovedIndex.push(index);
+									heartRemovedObj.push(updateHeartBoxObject[index]);
+									heartRemovedBoxes.push(heartBoxes[index]);
+									updateHeartBoxObject.splice(index,1);
+									heartBoxes.splice(index,1);
+								}
+								return true;
+						}
+					}
+					
+					return false;
+
+				}
+
+				//Function to check the collisions between the player and the invincibility perks.
+				function invDetectCollision() {
+					
+					// Gets the user's current collision area, the x and z bounds represents
+					// the bounds of the player in the resting position and the y bounds
+					// are updated with the current position of the player (it is needed because of the sliding and jumping animation).
+					let bounds1 = {
+						xMin: player.position.x - xzDim.x / 2,
+						xMax: player.position.x + xzDim.x / 2,
+						yMin: player.position.y,
+						yMax: player.position.y + yDim.y,
+						zMin: player.position.z - xzDim.z / 2,
+						zMax: player.position.z + xzDim.z / 2,
+					};
+
+					//Check if there is a collision between the player and the objects in the invPerk list.
+					for ( let index = 0; index < invPerk.length; index ++ ) {
+						
+						if ( ( bounds1.xMin <= invPerk[ index ].xMax && bounds1.xMax >= invPerk[ index ].xMin ) &&
+							( bounds1.yMin <= invPerk[ index ].yMax && bounds1.yMax >= invPerk[ index ].yMin) &&
+							( bounds1.zMin <= invPerk[ index ].zMax && bounds1.zMax >= invPerk[ index ].zMin) ) {
+								//If there is a collision the invinvibility perk object is removed
+								//from the scene and the corresponding box and bounds are removed from the 
+								//corresponding lists (in order to not compute futher collisions).
+								invRemovedBounds.push(invPerk[index]);
+								invPerk.splice(index,1);
+								scene.remove(updateInvBoxObject[index]);
+								invRemovedIndex.push(index);
+								invRemovedObj.push(updateInvBoxObject[index]);
+								invRemovedBoxes.push(invBoxes[index]);
+								updateInvBoxObject.splice(index,1);
+								invBoxes.splice(index,1);
+
+								return true;
+						}
+					}
+					
+					return false;
+
+				}
+
+				//Function to check the collisions with the camera and the maze's walls.
+				function cameraDetectCollision (collisions) {
+
+					//Check if there is a collision between the camera and of the objects in the collisions list.
+					for ( let index = 0; index < collisions.length; index ++ ) {
+						if ( ( c.x <= collisions[ index ].xMax && c.x >= collisions[ index ].xMin ) &&
+							( c.y <= collisions[ index ].yMax && c.y >= collisions[ index ].yMin) &&
+							( c.z <= collisions[ index ].zMax && c.z >= collisions[ index ].zMin) ) {
+								return true;
+						}
+					}
+
+					return false;
+				}
+
+				//Auxiliar function to update the bounding box of an object.
+				function updateBoxes(boxes,objects) {
+					for ( let i = 0; i < boxes.length; i ++ ) {
+						boxes[i].setFromObject( objects[i] );
+					}
+				}
+
+				//Auxiliar function to update the bounds of an object.
+				function updateHitboxes(boxes,hitBoxes) {
+					for ( let i = 0; i < hitBoxes.length; i ++ ) {
+						hitBoxes[i].xMin = boxes[i].min.x;
+						hitBoxes[i].xMax = boxes[i].max.x;
+						hitBoxes[i].yMin = boxes[i].min.y;
+						hitBoxes[i].yMax = boxes[i].max.y;
+						hitBoxes[i].zMin = boxes[i].min.z;
+						hitBoxes[i].zMax = boxes[i].max.z;
+					}
+				}
+
+				
+				//Variables for the start/restart of the game.
+				let bornDuration;
+				let revivalClock;				
+				let disappearanceSpeed;
+				let textHeight = (window.innerHeight/2)+40;
+				
+				//Variable for GameOver.
+				let gameOver = false;
+
+				//Vector for defining the direction of the mmovement.
+				let direction = new THREE.Vector3(); 
+
+				//Flag for the return at the resting condition. 
+				let down = false;
+
+				//Clock for the walking animation.
+				let walkClock = 0;		
+
+				//Variables for the walking animation.
+				const walkDuration = 1;
+				let speedRotation = 0;
+				
+				//Variables for the rotation of the player's parts during the walk.
+				let upRotation = 0;
+				let downRotation = 0;
+
+				//Clock for the jumping animation.
+				let jumpClock;
+
+				//Variables for the jumping animation.
+				const jumpDuration = 1.1;
+				const jumpHeight = 15;
+				let jumpSpeed;
+				let jumpVerticalSpeed;
+				let verticalPosition;
+
+				//Variables for the rotation of the player's parts during the jump.
+				let upPartialRotation;
+				let downPartialRotation;
+				let upRotationJump;
+				let downRotationJump;
+				let leftRotationJump;
+
+				//Clock for the jumping down animation.
+				let startDownJump;
+				let jumpDownClock;
+				let jumpDownSpeed;
+				
+				//Variables for the sliding animation.
+				const SlideDuration = 1.1;
+				const SlideHeight = -3.5;
+				
+				//Clock for the sliding animation.
+				let SlideClock;
+				let SlideSpeed;
+				
+				//Variables for the rotation of the player's parts during the slide.
+				let horizontalRotation, verticalRotation;
+				let rightKneePartialRotation, leftKneePartialRotation;
+				let hipPartialRotation;
+				let leftElbowPartialRotation, rightElbowPartialRotation;
+				let leftShoulderPartialRotation, rightShoulderPartialRotation, rightShoulderPartialRotation2;
+				let rightKneeRotation, leftKneeRotation;
+				let hipRotation;
+				let leftElbowRotation, rightElbowRotation;
+				let leftShoulderRotation, rightShoulderRotation, rightShoulderRotation2;
+				
+				//Clock for the sliding down animation.
+				let startDownSlide;
+				let SlideDownClock;
+				let SlideDownSpeed;
+				let cylinderClock;
+				let cylinderSpeed;
+
+				//Variables to moves the obstacles in the maze. 
+				const cylinderDuration = 1;
+				const stoneDuration = 4;
+				let cylinderPosition;
+				let yCylinderPosition;
+				const cylinderMov = 5;
+				const yCylinderMov = 7;
+				const cylinderTime = performance.now()/1000;
+
+				//Variable for the current time of each frame.
+				let time;
+
+				let animate = function() {					
+
+					//Gets the camera position.
+					camera.getWorldPosition(c);
+
+					requestAnimationFrame( animate );
+					
+					//Updates all the bounding box and the bounds of the moving objects in the maze.
+					updateBoxes(cylindersBoxes,updateBoxObject);
+					updateHitboxes(cylindersBoxes,movingCylinders);
+					
+					updateBoxes(spikePlaneBoxes,updatePlaneBoxObject);
+					updateHitboxes(spikePlaneBoxes,movingSpikePlanes);
+
+					updateBoxes(stoneBoxes,updateStoneBoxObject);
+					updateHitboxes(stoneBoxes,movingStones);
+					
+					updateBoxes(heartBoxes,updateHeartBoxObject);
+					updateHitboxes(heartBoxes,heartPerk);
+
+					updateBoxes(invBoxes,updateInvBoxObject);
+					updateHitboxes(invBoxes,invPerk);
+
+					//Current time
+					time = performance.now()/1000;
+
+					//Updates the walkClock time for the walking animation
+					if(!jump) walkClock = time - startWalk ;
+
+					//Checks if the camera is hitting a wall and it 
+					//switch the third person camera with the first 
+					//person camera or vice-versa.
+					if (cameraDetectCollision(walls)) firstPerson = true;
+					else firstPerson = false;
+
+					//Updates the box and the bounds of the player.
+					box1.setFromObject( player );
+					box1.getSize(yDim);
+
+					//Jump Animation
+					if (jump) {		
+
+						jumpClock = time - startJump;
+
+						jumpVerticalSpeed = Math.sin((1 / (jumpDuration-0.1)) * Math.PI * jumpClock);
+						verticalPosition = jumpHeight * jumpVerticalSpeed;
+
+						if (!down) {
+
+							jumpSpeed = Math.sin((1 / jumpDuration) * Math.PI * jumpClock);
+							
+							upPartialRotation = degToRad(startUp - radToDeg(upRotation)) *jumpSpeed;
+							downPartialRotation = Math.abs(degToRad(startDown - radToDeg(downRotation)) * jumpSpeed);
+
+							upRotationJump = upPartialRotation + upRotation;
+							downRotationJump = downPartialRotation + downRotation;
+							leftRotationJump = Math.abs(degToRad(startLeft - radToDeg(upRotation)) * jumpSpeed) + upRotation;
+						}
+
+						if( !down && ( upRotationJump > degToRad(startUp-1) ) ) {
+							startDownJump = performance.now()/1000;
+							down = true;
+						}
+
+						if(down) {
+
+							jumpDownClock = time - startDownJump;
+							jumpDownSpeed = Math.sin((1 / (jumpDuration)) * Math.PI * jumpDownClock);
+							upPartialRotation = degToRad(-startUp) *jumpDownSpeed;
+							downPartialRotation = (degToRad(-startDown) * jumpDownSpeed);
+							
+							upRotationJump = upPartialRotation + degToRad(startUp);
+							downRotationJump = downPartialRotation + degToRad(startDown);
+							leftRotationJump = (degToRad(-startLeft) * jumpDownSpeed) + degToRad(startLeft);
+							
+
+							if(rightHip.rotation.x > -0.1 && rightHip.rotation.x < 0.1 ) 
+								upRotationJump = 0;
+
+							if(rightKnee.rotation.x > -0.1 && rightKnee.rotation.x < 0.1 )
+								downRotationJump = 0;
+
+							if (leftShoulder.rotation.x > -0.1 && leftShoulder.rotation.x < 0.1 ) 
+								leftRotationJump = 0;
+							
+							if(verticalPosition  < 0) {
+								verticalPosition = 0;
+								down = false;
+								jump = false;
+								startWalk = performance.now()/1000;
+								walkClock = time - startWalk;
+							}
+
+						}
+
+						player.position.y = verticalPosition;
+						moveUpperParts(upRotationJump);
+						moveLowerParts(downRotationJump);
+						leftShoulder.rotation.x = leftRotationJump;						
+
+					}	
+
+					//Slide Animation
+					if(Slide) {	
+												
+						SlideClock = time - startSlide;
+						SlideSpeed = Math.sin((1 / SlideDuration) * Math.PI * SlideClock);
+						
+						verticalPosition = SlideHeight * SlideSpeed;
+						horizontalRotation = (degToRad(90) * SlideSpeed);
+						verticalRotation = (degToRad(-45) * SlideSpeed);
+					
+						
+						if (!down) {							
+							rightKneePartialRotation = (degToRad(45 - radToDeg(downRotation)) * SlideSpeed);
+							leftKneePartialRotation = (-downRotation * SlideSpeed);
+							hipPartialRotation = degToRad(-5 - radToDeg(upRotation)) * SlideSpeed;
+							leftElbowPartialRotation = degToRad(90 - radToDeg(downRotation)) * SlideSpeed;
+							rightElbowPartialRotation = -(downRotation) * SlideSpeed;
+							leftShoulderPartialRotation = degToRad(20 - radToDeg(upRotation)) * SlideSpeed;
+							rightShoulderPartialRotation = degToRad(45 - radToDeg(upRotation)) * SlideSpeed;
+							rightShoulderPartialRotation2 = degToRad(30) * SlideSpeed;
+
+							rightKneeRotation = rightKneePartialRotation + downRotation;
+							leftKneeRotation = leftKneePartialRotation + downRotation;
+							hipRotation = hipPartialRotation + upRotation;
+							leftElbowRotation = leftElbowPartialRotation + downRotation;
+							rightElbowRotation = rightElbowPartialRotation + downRotation;
+							leftShoulderRotation = leftShoulderPartialRotation + upRotation;
+							rightShoulderRotation = rightShoulderPartialRotation + upRotation;
+							rightShoulderRotation2 = rightShoulderPartialRotation2;
+						}
+
+						if( !down && ( horizontalRotation > degToRad(90-0.05) ) ) {
+							startDownSlide = performance.now()/1000;
+							down = true;
+						}
+
+						if(down) {
+
+							SlideDownClock = time - startDownSlide;
+							SlideDownSpeed = Math.sin((1 / (jumpDuration)) * Math.PI * SlideDownClock);
+							
+							hipPartialRotation = (degToRad(5) * SlideDownSpeed)
+							rightKneePartialRotation = (degToRad(-45) * SlideDownSpeed);
+							leftElbowPartialRotation = (degToRad(-90) * SlideDownSpeed)
+							leftShoulderPartialRotation = (degToRad(-20) * SlideDownSpeed);
+							rightShoulderPartialRotation = degToRad(-45) * SlideDownSpeed;
+							rightShoulderPartialRotation2 = degToRad(-30) * SlideDownSpeed;
+
+							hipRotation = hipPartialRotation + degToRad(-5);
+							leftKneeRotation = 0;
+							rightKneeRotation = rightKneePartialRotation + degToRad(45);
+							leftElbowRotation = leftElbowPartialRotation + degToRad(90);
+							rightElbowRotation = 0
+							leftShoulderRotation = leftShoulderPartialRotation + degToRad(20);
+							rightShoulderRotation = rightShoulderPartialRotation + degToRad(45);
+							rightShoulderRotation2 = rightShoulderPartialRotation2 + degToRad(30);
+
+							if(verticalPosition  > 0) {
+								verticalPosition = 0;
+								Slide = false;
+								down = false;
+								startWalk = performance.now()/1000;
+								walkClock = time - startWalk;
+							} 							
+
+						}
+
+						lumbarRegion.position.y = verticalPosition + lumbarRegionHeight;
+						
+						lumbarRegion.rotation.x = horizontalRotation;
+						lumbarRegion.rotation.y = verticalRotation;
+
+						rightHip.rotation.x = hipRotation;
+						leftHip.rotation.x = -hipRotation;
+
+						rightKnee.rotation.x = -rightKneeRotation;
+						leftKnee.rotation.x = -leftKneeRotation;
+
+						leftShoulder.rotation.x = leftShoulderRotation;
+						
+						rightShoulder.rotation.x = -rightShoulderRotation;
+						rightShoulder.rotation.z = rightShoulderRotation2;
+
+						rightElbow.rotation.x = rightElbowRotation;
+						leftElbow.rotation.x = leftElbowRotation;
+						
+					}
+
+					//Updates the values for the walking animation if the player
+					//is not jumping, sliding and the player is not moving.
+					if(!jump && !Slide && !isNaN(startWalk)) {
+						speedRotation = Math.sin((1/walkDuration)*2*Math.PI*walkClock);
+						upRotation = degToRad(60)*speedRotation;
+						downRotation = Math.abs(degToRad(80)*speedRotation);
+					}
+
+					//Computes the direction of the movement.
+					direction.z = Number( moveForward ) - Number( moveBackward );
+					direction.x = Number( moveRight ) - Number( moveLeft );
+					direction.normalize();
+
+					//Moves the player forward or backwards and perform the walking animation if the player is not
+					//jumping or sliding. If the player hits a wall it is translated back to the previous position.
+					if ( moveForward || moveBackward ) {
+
+						player.translateZ(-direction.z/2);
+						if(Slide && moveBackward) player.translateZ(direction.z/2);
+						
+						if (playerDetectCollision(walls)) player.translateZ(direction.z/2);
+
+						if(!jump && !Slide) {
+							moveUpperParts(upRotation);
+							moveLowerParts(downRotation);
+						}
+						
+					}
+
+					//Moves the player to the left or to the right and it performs the walking animation if the player is not
+					//jumping or sliding. If the player hits a wall it is rotated back to the previous position.
+					if ( moveLeft || moveRight ) {
+
+						player.rotation.y -= degToRad(6)*direction.x;
+						
+						if (playerDetectCollision(walls)) player.rotation.y += degToRad(6)*direction.x;
+						
+						
+						if (!jump && !Slide) {
+							moveUpperParts(upRotation);
+							moveLowerParts(downRotation);
+						}
+
+					}
+
+					//Checks for the collisions of the player
+					//only if the player has not taken the invincible perk.
+					if(!invFlag) {
+
+						if ( playerDetectCollision(stationaryCylinders) ||
+							playerDetectCollision(movingCylinders) ||
+							playerDetectCollision(movingSpikePlanes) ||
+							playerDetectCollision(movingStones) ) isGameOver();
+					
+					}
+
+					//Computes when the action of the invincible perk finishes
+					//and set back the values changed after the acquisition of the perk.
+					else if (time > startInv+invDuration) {
+						invFlag = false;
+						headMaterial.color.set(0xffffff);
+						torsoMaterial.color.set(0xffffff);
+						removeTexts(overlayScene);
+					}
+
+					//Checks for a collisions between the player and the heart perk.
+					if ( heartDetectCollision() ) {
+						
+						if(endGame == 2 || endGame == 1) {
+							if(endGame == 2) overlayScene.add(life3);
+							else overlayScene.add(life2);
+							endGame+= 1;							
+						}						
+					}
+
+					//Checks for a collision between the player and the invincible perk.
+					if ( invDetectCollision(invPerk) ) {
+
+						invFlag = true;
+						startInv = performance.now()/1000;	
+						headMaterial.color.set(0xff0000);
+						torsoMaterial.color.set(0xff0000);		
+						
+						let string = 'Invincibility for 10 seconds';
+						invLoader.load( 'Font/helvetiker_regular.typeface.json', function (font) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 5,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+
+							};
+							
+						
+							geo3 = new THREE.TextBufferGeometry( string, textProperties);
+							geo3.center();
+							invTextNew = new THREE.Mesh(geo3,allertMaterial);
+							invTextNew.name = "text";
+							invTextNew.position.y = window.innerHeight/2 - window.innerWidth/30;
+							overlayScene.add(invTextNew);
+						} );
+
+					}
+
+					//Checks for a collision between the player and the exit ladder.
+					if ( playerDetectCollision(endWall) ) {
+						
+						endFlag = true;
+						menuFlag = true;
+
+						finalTime = (time - totTime).toFixed(2);
+
+						menuLoader.load( 'Font/helvetiker_regular.typeface.json', function ( font ) {
+							textProperties = {
+								font: font,
+								size: s,
+								height: 2,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//Removes the menu text from the "menuScene"
+							removeTexts(menuScene);
+
+							menuGeo = new THREE.TextBufferGeometry( '                You reach the exit !\n                  Your time is:'+ finalTime +'\n\nClick on the screen to restart the game.\n              Try to beat your time !', textProperties);
+							menuGeo.center();
+							menuNew = new THREE.Mesh(menuGeo,allertMaterial);
+							menuNew.name = "text";
+							menuScene.add(menuNew);
+							
+						} );
+
+						spawnPosition();						
+
+						for(endGame;endGame<3;endGame+=1) {
+							if(endGame==1) 
+								overlayScene.add(life2);
+							if(endGame==2)
+								overlayScene.add(life3);
+						}
+
+						setStartingVariables();
+
+					}
+
+					//If the player is not moving, it returns to the resting position. 
+					if (!moveForward && !moveBackward && !moveLeft && !moveRight && !jump && !Slide) {
+
+						//The movement of the lower part is slightly slower. To have all the body's parts
+						//with 0 as rotation around the x axis, I checked when the lower part
+						//reaches a value between -0.2 and 0.2 radians.
+						if(rightKnee.rotation.x!=0) {
+
+							if(rightHip.rotation.x > -0.2 && rightHip.rotation.x < 0.2 ) 
+								upRotation = 0;
+
+							if(rightKnee.rotation.x > -0.2 && rightKnee.rotation.x < 0.2 ) 
+								downRotation = 0;
+
+							moveUpperParts(upRotation);
+							moveLowerParts(downRotation);
+						}
+						else startWalk = NaN;
+														
+					}
+
+					//Computation and updating of the new positions and orientations of the obstacles' objects in the maze.
+
+					for(let i=0;i<xRotCylinders.length;i++) xRotCylinders[i].rotation.x += degToRad(5);
+					for(let i=0;i<yRotCylinders.length;i++) yRotCylinders[i].rotation.y += degToRad(5);		
+					for(let i=0;i<yRotPerks.length;i++) {
+						yRotPerks[i].rotation.y += degToRad(2);	
+						yRotPerks[i].rotation.x += degToRad(2);	
+					}
+					
+					cylinderClock = time - cylinderTime;
+					let stoneClock = time%stoneDuration; 
+					cylinderSpeed = Math.sin((1 / cylinderDuration) * Math.PI * cylinderClock);
+					
+					cylinderPosition = cylinderMov * cylinderSpeed;
+					yCylinderPosition = yCylinderMov * cylinderSpeed;
+
+					//Linear interpolation to compute the value of the pieces of the ceiling that are falling down
+					let yStonePosition = (- 2 - (wallHeight + 1)*2) * ((cylinderTime+stoneClock)-cylinderTime)/((cylinderTime+stoneDuration)-cylinderTime) + (wallHeight + 1);
+
+					for(let i=0;i<zMovCylinders.length;i+=2) {
+						zMovCylinders[i].position.z = zPosCylinders[i] - cylinderPosition;
+						zMovCylinders[i+1].position.z = zPosCylinders[i+1] + cylinderPosition;
+					}
+
+					for(let i=0;i<xMovCylinders.length;i+=2) {
+						xMovCylinders[i].position.x = xPosCylinders[i] - cylinderPosition;
+						xMovCylinders[i+1].position.x = xPosCylinders[i+1] + cylinderPosition;
+					}	
+
+					for(let i=0;i<yMovCylinders.length;i+=1) {
+						yMovCylinders[i].position.y = yPosCylinders[i] - yCylinderPosition;
+						
+					}
+					
+					for(let i=0;i<yMovSpikePlanes.length;i+=1) {
+						yMovSpikePlanes[i].position.y = yCylinderPosition;
+					}
+
+					for(let i=0;i<(yMovStones.length);i+=6) {
+						yMovStones[i].position.y = yStonePosition;
+						yMovStones[i].rotation.y += degToRad(5);
+						yMovStones[i+1].position.y = yStonePosition;
+						yMovStones[i+1].rotation.y += degToRad(5);
+						yMovStones[i+2].position.y = yStonePosition;
+						yMovStones[i+2].rotation.y += degToRad(5);
+						yMovStones[i+3].position.y = yStonePosition+5;
+						yMovStones[i+3].rotation.y += degToRad(5);
+						yMovStones[i+4].position.y = yStonePosition+5;
+						yMovStones[i+4].rotation.y += degToRad(5);
+						yMovStones[i+5].position.y = yStonePosition+5;
+						yMovStones[i+5].rotation.y += degToRad(5);
+					}
+					
+					life1.rotation.y = time*degToRad(90);
+					life2.rotation.y = time*degToRad(90);
+					life3.rotation.y = time*degToRad(90);
+
+					//Moves the revival text on the overlay scene.
+					if(revivalFlag && !gameOver) {
+						moveText(time,textNew);
+
+						//Allows the player to blink
+						if (time.toFixed(1)%1.5>0.5) scene.remove(player);
+						else scene.add(player);
+						
+						//remove the text and add the player to the main "scene".
+						if(revivalClock > bornDuration) {
+							removeTexts(overlayScene);
+							revivalFlag = false;
+							scene.add(player);
+						}
+					} 
+
+					//Moves the game over text on the overlay scene
+					if(gameOver) {
+						
+						//Allows the player to blink
+						if (time.toFixed(1)%1.5>0.5) scene.remove(player);
+						else scene.add(player);
+						
+						moveText(time,gOverNew);
+
+						//remove the text and add the player to the main "scene".
+						if(revivalClock > bornDuration) {
+							gameOver = false;
+							removeTexts(overlayScene);
+							scene.add(player);
+						}
+					}
+
+					//Clears the renderer and then chose which scene and which
+					//camera has to be rendered.
+					renderer.clear();
+					renderer.clearDepth();
+					if (!menuFlag) {
+						if(first) renderer.render( scene, cameraFirstPerson );
+						else {
+							if(!firstPerson) renderer.render( scene, camera );
+							else renderer.render( scene, cameraFirstPerson );
+						}						
+						renderer.render( overlayScene, cameraOverlay );
+					}
+					else {
+						renderer.render( menuScene, cameraOverlay );
+					}
+
+				};
+
+				//Auxiliary function to move the upper part of the player's body.
+				function moveUpperParts(UpRot) {
+
+					rightHip.rotation.x = UpRot;
+					leftHip.rotation.x = -UpRot;
+					rightShoulder.rotation.x = -UpRot;
+					leftShoulder.rotation.x = UpRot;
+
+				}
+
+				//Auxiliary function to move the lower part of the player's body.
+				function moveLowerParts(DownRot) {
+
+					rightKnee.rotation.x = -DownRot;
+					leftKnee.rotation.x = -DownRot;
+					rightElbow.rotation.x = DownRot;
+					leftElbow.rotation.x = DownRot;	
+
+				}
+
+				//Auxiliary function to create a new spike plane.
+				function newSpikesPlane(circles) {
+					
+					//Creates a plnae object to contain the spikes' objects
+					const plane = new THREE.Object3D();
+					
+					//Creates the spike geometry and load the texture
+					const coneGeometry = new THREE.ConeBufferGeometry( 0.5, 10, 32 );
+					let loader = new THREE.TextureLoader();	
+					const coneMaterial = new THREE.MeshBasicMaterial({
+												map: loader.load('img/spike.jpeg'),
+											});
+					
+					//Creates the circle geometry
+					const circleGeometry = new THREE.CircleBufferGeometry( 0.6, 32 );
+					
+					let spike;
+					let circle;
+					
+					//Creates a spike and a circle (that represents the point in which the
+					//spike will come out) and puts them in the right position.
+					for(let i=0;i<3;i+=1) {
+						for(let j=0;j<4;j+=1) {
+							
+							
+							spike = new THREE.Mesh( coneGeometry, coneMaterial );
+							circle = new THREE.Mesh( circleGeometry, coneMaterial );
+							circle.rotation.x = degToRad(-90);
+							circle.position.y = -0.2;
+							spike.position.y = -2;
+							
+							if(j==0) {
+								spike.position.x = -3;
+								circle.position.x = -3;
+							}
+							else if (j==1) {
+								spike.position.x = -1;
+								circle.position.x = -1;
+							}
+							else if (j==2) {
+								spike.position.x = 1;
+								circle.position.x = 1;
+							} 
+							else {
+								spike.position.x = 3;
+								circle.position.x = 3;
+							}
+							
+							if(i==0) {
+								spike.position.z = -3;
+								circle.position.z = -3;
+							}
+							else if (i==1) {
+								spike.position.z = 0;
+								circle.position.z = -0;
+							} 
+							else if (i==2) {
+								spike.position.z = 3;
+								circle.position.z = 3;
+							} 
+
+							//Pushes the circles in the input list.
+							circles.push(circle);
+							//Adds the spikes to the "plane" object.
+							plane.add(spike);
+						}
+					}
+					
+					return plane;
+
+				}
+
+				//Auxiliary function to create a new cylinder with spikes.
+				function newCylinder() {
+
+					//Creating the geometry and the material for the cylinder obstacles.
+					const loader = new THREE.TextureLoader();
+					const cyliGeometry = new THREE.CylinderGeometry( 1.5, 1.5, wallBase, 25 );
+					const cyliMaterial = new THREE.MeshBasicMaterial({
+												map: loader.load('img/cilindro.jpg'),
+											});
+					
+					//Creating the cylinder object.
+					let cylinder = new THREE.Mesh( cyliGeometry, cyliMaterial );
+
+					//Create the spike geometry and load the texture
+					const coneGeometry = new THREE.ConeBufferGeometry( 0.5, 2, 32 );
+					let spikeLoader = new THREE.TextureLoader();	
+					const coneMaterial = new THREE.MeshBasicMaterial({ map: spikeLoader.load('img/spike.jpeg'), });
+
+					let z = 0
+
+					//Puts the spikes in the correct position over the cylinder.
+					for(let i=0;i<8;i+=1) {
+						let spike = new THREE.Mesh( coneGeometry, coneMaterial );
+						
+						if (i<4) spike.position.y = wallBase/4;
+						else spike.position.y = -wallBase/4;
+
+						spike.rotation.x = degToRad(90); 
+						spike.rotation.z = degToRad(z);
+						
+						if(i%4==0) spike.position.z = 2;
+						else if (i%4==1) spike.position.x = -2;
+						else if (i%4==2) spike.position.z = -2;
+						else spike.position.x = 2;
+						
+						cylinder.add(spike);
+
+						z += 90;
+					}
+
+					scene.add( cylinder );
+					
+					return cylinder;
+				}
+
+				//Auxiliary function to create new parts of the ceiling that are falling down.
+				function newStones(stones) {
+
+					let plane = new THREE.Object3D();
+					
+					//Creates the geometry and loads the texture
+					const stoneGeometry = new THREE.BoxBufferGeometry( 2, 2, 2 );
+					
+					let stoneTexture = new THREE.TextureLoader().load('img/parti_soffitto.jpg');
+					let stoneMaterial = new THREE.MeshBasicMaterial({ map: stoneTexture });
+					
+					let z = 45;
+
+					//Puts the pieces in the correct position.
+					for(let i=0;i<6;i+=1) {
+
+						let stone = new THREE.Mesh( stoneGeometry, stoneMaterial );
+						
+						stone.position.y = wallHeight+1;
+						stone.rotation.z = degToRad(z);
+						
+						if(i%3==0) {
+							stone.position.z = 2;
+							stone.position.x = -2;
+						}
+						else if (i%3==1) {
+							stone.position.z = 1;
+							stone.position.x = 3;
+						}
+						else {
+							stone.position.z = -2;
+							stone.position.x = 0;
+						}
+						
+						stones.push(stone);
+						plane.add(stone);
+						z += 45;
+					}
+
+					scene.add( plane );
+					
+					return plane;
+
+				}
+
+				//Auxiliary function to move the text on the overlayScreen
+				function moveText(time,textObj) {
+					revivalClock = time - startRevival;
+					//Linear interpolation to move the text.
+					let mov = (textHeight) * ((startRevival+revivalClock)-startRevival)/((startRevival+bornDuration)-startRevival);
+					textObj.position.y =  mov;
+				}
+
+				//Function to menage when a player loss a life. 
+				function isGameOver() {
+					
+					endGame -= 1;
+
+					if (endGame == 2) {
+						
+						bornDuration = 2.5;
+
+						//Add the correct text, remove the correct heart-shaped object and sets the player to the initial position. 
+						overlayScene.add(textNew);
+						overlayScene.remove(life3);
+						spawnPosition();
+					}
+
+					if (endGame == 1) {
+
+						//Add the correct text, remove the correct heart-shaped object and sets the player to the initial position. 
+						overlayScene.add(textNew);
+						overlayScene.remove(life2);
+						spawnPosition();
+					}
+					if (endGame == 0) {
+						
+						finalTime = (time - totTime).toFixed(2);
+
+						let string = '     GAME OVER!\n        Try Again\n   Your time is:' + finalTime;						
+
+						if( window.innerWidth < window.innerHeight)
+							s = window.innerWidth/30;
+						else 
+							s = window.innerHeight/30;
+
+						function ff(font) {
+							
+							textProperties = {
+								font: font,
+								size: s,
+								height: 5,
+								curveSegments: 12,
+								bevelEnabled: true,
+								bevelThickness: 0,
+								bevelSize: 1,
+								bevelOffset: 0,
+								bevelSegments: 5
+							};
+
+							//removes all the old texts from the overlayScene
+							removeTexts(overlayScene);
+
+							geo2 = new THREE.TextBufferGeometry( string, textProperties);
+							geo2.center();
+							gOverNew = new THREE.Mesh(geo2,allertMaterial);
+							gOverNew.name = "text";
+							overlayScene.add(gOverNew);
+						}
+
+						gOverLoader.load( 'Font/helvetiker_regular.typeface.json', ff );
+
+						//Sets the player to the initial condition 
+						spawnPosition();
+						
+						//Sets all the variables to the initial values.
+						setStartingVariables();
+
+						//Add again all the heart-shaped objects
+						overlayScene.add(life1);
+						overlayScene.add(life2);
+						overlayScene.add(life3);
+
+						//Sets the distance that the text has to cover and 
+						//the duration of the text's movement.
+						textHeight = (window.innerHeight/2)+200;
+						bornDuration = 4;
+						gameOver = true;
+
+					}
+					
+					//Starts the revival timer.
+					startRevival = performance.now()/1000;
+					revivalFlag = true;
+
+				}
+
+				//Auxiliary function to set the player to the initial position and in the resting position. 
+				function spawnPosition() {
+					jump = false;
+					Slide = false;
+					moveUpperParts(0);
+					moveLowerParts(0);
+					lumbarRegion.position.y = lumbarRegionHeight;
+					lumbarRegion.rotation.x = 0;
+					lumbarRegion.rotation.y = 0;
+					rightShoulder.rotation.z = 0;
+					player.rotation.y = 0;		
+
+					moveForward = moveLeft = moveRight = moveBackward = false;
+					upRotation = downRotation = 0;
+					
+					//To avoid that the player after the revival will start the jump/slide animation in a wrong way.
+					down = false;
+					
+					setSpawnPosition();			
+				}
+
+				//Auxiliary function to set all the variables needed to the initial conditions. 
+				function setStartingVariables() {
+					
+					if(invFlag) {
+						invFlag = false;
+						headMaterial.color.set(0xffffff);
+						torsoMaterial.color.set(0xffffff);
+						removeTexts(overlayScene);
+					}
+					
+					start = false;
+					endGame = 3;
+
+					//Inserts all the perks again in their corresponding lists to 
+					//compute back the collisions with the player.
+
+					for(let i=0;i<heartRemovedIndex.length;i+=1) {
+						
+						let index = heartRemovedIndex[i];
+						heartPerk.splice(index,0,heartRemovedBounds[i]);
+						scene.add(heartRemovedObj[i]);
+						updateHeartBoxObject.splice(index,0,heartRemovedObj[i]);
+						heartBoxes.splice(index,0,heartRemovedBoxes[i]);
+
+					}
+
+					heartRemovedIndex.length = heartRemovedObj.length = heartRemovedBoxes.length = heartRemovedBounds.length = 0;
+
+					for(let i=0;i<invRemovedIndex.length;i+=1) {
+						let index = invRemovedIndex[i];
+						invPerk.splice(index,0,invRemovedBounds[i])
+						scene.add(invRemovedObj[i]);
+						updateInvBoxObject.splice(index,0,invRemovedObj[i]);
+						invBoxes.splice(index,0,invRemovedBoxes[i]);
+					}
+
+					invRemovedIndex.length = invRemovedObj.length = invRemovedBoxes.length = invRemovedBounds.length = 0;
+					
+				}
+				
+				animate();
+
+			}
+
+			main();
+			
+			
+		</script>
+	</body>
+</html>
